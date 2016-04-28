@@ -1,54 +1,46 @@
 package me.lishuo.jersey.resource;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Context;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import me.lishuo.domain.RspCode;
+import me.lishuo.util.JsonUtil;
 
-import me.lishuo.jersey.exception.BaseException;
-import me.lishuo.jersey.exception.ExceptionCode;
-
-/**
- * 统一异常处理器
- */
+/**   
+* 
+* @Description: 统一异常处理器 
+* @author lis   
+* @date 2016年4月12日
+* @version V1.0   
+*/
 @Provider
-public class ExceptionSupport implements ExceptionMapper<Exception> {
+public class ExceptionSupport extends AbstractResource implements ExceptionMapper<Exception> {
 
-	private static Logger logger = LoggerFactory.getLogger(ExceptionSupport.class);
-
-	@Context
-	private HttpServletRequest request;
-
-
-	/**
-	 * 异常处理
-	 * 
-	 * @param exception
-	 * @return 异常处理后的Response对象
+	
+	/* 异常处理
+	 * (non-Javadoc)
+	 * @see javax.ws.rs.ext.ExceptionMapper#toResponse(java.lang.Throwable)
 	 */
 	public Response toResponse(Exception exception) {
-		String message = ExceptionCode.INTERNAL_SERVER_ERROR;
-		Status statusCode = Status.INTERNAL_SERVER_ERROR;
-		// 处理checked exception
-		if (exception instanceof BaseException) {
-			BaseException baseException = (BaseException) exception;
-			String code = baseException.getCode();
-			message = code;
-
-		} else if (exception instanceof NotFoundException) {
-			message = ExceptionCode.REQUEST_NOT_FOUND;
-			statusCode = Status.NOT_FOUND;
-		} 
-		// checked exception和unchecked exception均被记录在日志里
+		String message = buildExceptionResponse(RspCode.SERVICE_EXCEPTION);
+		Status statusCode = Status.OK;
 		logger.error(message, exception);
-		return Response.ok(message, MediaType.TEXT_PLAIN).status(statusCode)
-				.build();
+		return Response.ok(message, MediaType.APPLICATION_JSON).status(statusCode).build();
+	}
+
+	/**
+	 * @Description 构建异常响应
+	 * @return
+	 */
+	public static String buildExceptionResponse(RspCode rspCode) {
+		Map<String,Object> rsp = new HashMap<String,Object>();
+		RspCode.setRspCode(rsp, rspCode);
+		return JsonUtil.toJson(rsp);
 	}
 }
